@@ -6,12 +6,12 @@ Note that this project is still in progress and isn't complete yet.
 -----------
 /**
 This is a draft file and it isn't well written so you might not catch a thing
-consider studying Season 5 from the Book digital designe 2 by M. Mano
+consider studying Season 5 from the Book digital designe 2 by M. Mano*/
 Project manoo computer with vhdl
 Author: Erfan Soori
 fall 97
 supervisor :Mohsen Farhadi
-*/
+
 
 	Faze 1:
 	
