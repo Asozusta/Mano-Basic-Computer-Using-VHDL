@@ -1,0 +1,272 @@
+Library ieee;
+Use ieee.std_logic_1164.all;
+
+Entity cumain is 
+port(
+
+	--inputs:
+	I : in std_logic; --comes from the last bit of IR
+
+	D : in  std_logic_vector(7 downto 0); --the decoded instruction that comes from the dec3x8
+
+	IR : in std_logic_vector(11 downto 0); -- the operand bits from IR
+
+	T : in std_logic_vector(15 downto 0 ); -- time signal comming from the dec4x16 determinig the processing step we're going to perform
+
+	clock : in std_logic; --clk from clock generator
+
+
+	--outputs:
+
+	
+	INR,LD,CLR	: out std_logic_vector(5 downto 0); -- registers inputs IR,AR,PC,TR,AC,DR
+
+	s : out std_logic_vector(2 downto 0 ); -- bus line selector
+
+	SCINR,SCCLR : out std_logic; -- to control the sequence counter
+
+	MRead,MWrite : out std_logic; -- reading and writing from/to the memory
+
+);
+
+End cumain;
+
+Architecture behavioral of cumain is
+
+	signal 
+	IRINR,IRLD,IRCLR,
+	ARIRN,ARLD,ARCLR,
+	PCINR,PCLD,PCCLR,
+	TRINR,TRLD,TRCLR,
+	ACINR,ACLD,ACCLR,
+	DRINR,DRLD,IRCLR : out std_logic;
+
+	INR[0]<=IRINR;LD[0]<=IRLD;CLR[0]<=IRCLR;
+	INR[1]<=ARINR;LD[1]<=ARLD;CLR[1]<=ARCLR;
+	INR[2]<=PCINR;LD[2]<=PCLD;CLR[2]<=PCCLR;
+	INR[3]<=TRINR;LD[3]<=TRLD;CLR[3]<=TRCLR;
+	INR[4]<=ACINR;LD[4]<=ACLD;CLR[4]<=ACCLR;
+	INR[5]<=DRINR;LD[5]<=DRLD;CLR[5]<=DRCLR;
+	
+	Begin
+
+		time:process(T,clock`event)
+
+			begin
+
+--           T[0] to T[3]            --
+
+
+			if(T[0]) then
+				if(clock`event='1') then
+					LD<="000000";
+					IR<="000000";
+					CLR<="000000";
+					s<="010"
+					--SCINR<='1';
+				else	
+					ARLD<='1';
+
+				end if;
+
+
+			elsif(T[1]) then
+				if(clock`event='1') then
+					LD<="000000";
+					IR<="000000";
+					CLR<="000000";
+					PCINR<='1';
+					MRead<=1;
+					s<="111";
+					--SCINR<='1';
+				else
+					IRLD<='1';
+				end if;
+
+
+			elsif(T[2]) then
+				if(clock`event='1') then
+					LD<="000000";
+					IR<="000000";
+					CLR<="000000";
+					s<="101";
+					--SCINR<='1';
+				else
+					ARLD<='1';
+				end if;
+
+
+			elsif(T[3] and D[7] and IR[15]) then
+				if(clock`event='1') then
+					LD<="000000";
+					IR<="000000";
+					CLR<="000000";
+					--SCINR<='1';
+
+				else
+				
+				end if;
+
+
+			elsif(T[3] and D[7] and  (not IR[15])) then
+				if(clock`event='1') then
+					LD<="000000";
+					IR<="000000";
+					CLR<="000000";
+					--SCINR<='1';
+
+				else
+				
+				end if;
+
+
+			elsif(T[3] and (not D[7]) and IR[15]) then
+				if(clock`event='1') then
+					LD<="000000";
+					IR<="000000";
+					CLR<="000000";
+					--SCINR<='1';
+					MRead<=1;
+					s<="111";
+				else
+					ARLD<='1';
+
+				end if;
+
+
+			elsif(T[3] and (not D[7]) and (not IR[15])) then
+				if(clock`event='1') then
+					LD<="000000";
+					IR<="000000";
+					CLR<="000000";
+					--SCINR<='1';
+					NULL;
+				else
+					NULL;
+				end if;
+
+
+
+--  T[4]:T[4]:T[4]:T[4]:T[4]:T[4]:T[4]:T[4]:T[4]:T[4]:--
+
+			elsif(T[4] and D[0])
+				if(clock`event='1') then
+					LD<="000000";
+					IR<="000000";
+					CLR<="000000";
+					--SCINR<='1';
+					MRead<='1';
+					s<="111";
+
+				else
+					DRLD<='1';
+				end if;
+
+
+
+			elsif(T[4] and D[1])
+				if(clock`event='1') then
+					LD<="000000";
+					IR<="000000";
+					CLR<="000000";
+					--SCINR<='1';
+					MRead<='1';
+					s<="111";
+
+				else
+					DRLD<='1';
+				end if;
+
+
+				elsif(T[4] and D[2])
+				if(clock`event='1') then
+					LD<="000000";
+					IR<="000000";
+					CLR<="000000";
+					--SCINR<='1';
+					MRead<='1';
+					s<="111";
+
+				else
+					DRLD<='1';
+				end if;
+
+
+
+				elsif(T[4] and D[3])
+				if(clock`event='1') then
+					LD<="000000";
+					IR<="000000";
+					CLR<="000000";
+					--SCCLR<='1';
+					s<="100"
+					ARLD<='1';
+
+				else
+					MWrite<='1';
+					
+				end if;
+				
+
+
+				elsif(T[4] and D[4])
+				if(clock`event='1') then
+					LD<="000000";
+					IR<="000000";
+					CLR<="000000";
+					--SCCLR<='1';
+
+				else
+				
+				end if;
+
+
+
+				elsif(T[4] and D[5])
+				if(clock`event='1') then
+					LD<="000000";
+					IR<="000000";
+					CLR<="000000";
+
+				else
+				
+				end if;
+
+
+
+				elsif(T[4] and D[6])
+				if(clock`event='1') then
+					LD<="000000";
+					IR<="000000";
+					CLR<="000000";
+
+				else
+				
+				end if;
+
+
+
+				elsif(T[4] and D[7])
+				if(clock`event='1') then
+					LD<="000000";
+					IR<="000000";
+					CLR<="000000";
+
+				else
+				
+				end if;
+
+
+
+
+
+
+			elsif(T[5])
+				if(clock`event='1') then
+					LD<="000000";
+					IR<="000000";
+					CLR<="000000";
+
+				else
+				
+				end if;
