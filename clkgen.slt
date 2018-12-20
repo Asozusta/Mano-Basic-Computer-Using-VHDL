@@ -1,0 +1,23 @@
+Library ieee;
+Use ieee.std_logic_1164.all;
+
+Entity clkgen is 
+port(
+	clock : out std_logic;
+);
+
+End clkgen;
+
+Architecture behavioral of clkgen is
+
+	process
+	begin
+
+		clock <= '0';
+		wait for 100 ns;
+		clock <= '1';
+		wait for 200 ns;
+
+	end process ;
+
+end behavioral;

@@ -1,0 +1,77 @@
+Library ieee;
+Use ieee.std_logic_1164.all;
+
+Entity ram is 
+port(
+
+	--inputs:
+
+	address : in std_logic_vector(11 downto 0);
+
+	input : in std_logic_vector(15 downto 0);
+
+	read : in std_logic;
+
+	write : in std_logic;
+
+	programmer : in std_logic;
+	code : in std_logic_vector(15 downto 0);
+	line : in std_logic_vector(12 downto 0);
+
+	--outputs:
+
+	output : out std_logic_vectorI(15 downto 0);
+
+	stop : out std_logic;
+	lineINC : out std_logic;
+);
+
+End ram;
+
+Architecture behavioral of ram is
+
+type ram_2D_Array is array (4095 downto 0, 15 downto 0) of integer;
+
+signal memory : ram_2D_Array;
+
+
+
+begin
+
+	rw:process(read, write)
+	begin
+
+		if((not programmer)and read and (not(write))) then -- read from memory and put the output on the bus
+			
+			for i in 0 to 15 loop
+				output[i] <= memory(to_integer(unsigned(address)),i);
+			end loop;
+
+		elsif((not programmer)and write and (not(read))) then-- read from bus and put the output in the memory
+
+			for i in 0 to 15 loop
+				memory(to_integer(unsigned(address)),i) <= input[i] ;
+			end loop;
+
+		elsif((not programmer)and (write and read)or((not(write))and(not(read)))) then 
+
+			NULL;
+
+		
+
+
+		end if ;
+	end process rw;
+
+	p:process(programmer)
+	begin
+			if(programmer) then
+				stop <= '1';
+				lineINC <='1';
+				for i in 0 to 15 loop
+					memory(line,i) <= code[i] ;
+				end loop;
+			end if ;
+
+	end process p;
+end behavioral;

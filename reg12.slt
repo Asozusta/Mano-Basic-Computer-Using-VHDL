@@ -1,0 +1,61 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.all;
+use ieee.numeric_std.all;
+
+entity Register11 is
+
+	port(
+
+	--inputs:
+
+		input :in std_logic_vector(11 downto 0); -- comes from bus
+		LD :in std_logic;
+		CLR :in std_logic;
+		INR :in std_logic;
+
+	--outputs:
+		output :out std_logic_vector(11 downto 0) -- goes to bus
+
+	);
+
+end Register11;
+
+
+architecture behavioral of Register16 is 
+
+signal val :std_logic_vector(11 downto 0);
+
+begin
+
+	output <= val ;
+
+--load from bus
+	load: Process(LD) is
+	begin 
+		if(LD) then
+			val <= input;
+		end if;
+	end process load;
+
+
+--increase value by one
+	increase: Process(INR) is
+	variable i :integer range 0 to 1;
+	begin 
+		if(INR) then
+			i := 1;
+			val <= std_logic_vector((to_unsigned(i,val'range) + unsigned(val));
+		end if;
+	end process increase;
+
+
+--clear the register
+	clear: Process(CLR) is
+	begin 
+		if(CLR) then
+			val<="0000000000000000"
+		end if;
+	end process clear;
+
+	
+end behavioral;

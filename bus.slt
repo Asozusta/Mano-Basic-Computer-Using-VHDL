@@ -1,0 +1,47 @@
+Library ieee;
+Use ieee.std_logic_1164.all;
+
+Entity bus is 
+	port(
+
+	--inputs:
+		
+		sel : in std_logic_vector(2 downto 0);
+
+		ARin : in std_logic_vector(15 downto 0);	--1
+
+		PCin : in std_logic_vector(15 downto 0);	--2
+
+		DRin : in std_logic_vector(15 downto 0);	--3
+
+		ACin : in std_logic_vector(15 downto 0);	--4
+
+		IRin : in std_logic_vector(15 downto 0);	--5
+
+		TRin : in std_logic_vector(15 downto 0);	--6
+
+		Min : in std_logic_vector(15 downto 0);		--7
+
+	--output :
+
+		output : out std_logic_vectorI(15 downto 0);
+
+	);
+
+End bus;
+
+Architecture behavioral of bus is
+
+begin
+
+	with  sel  select
+		output <= 	"0000000000000000" when “000” ,
+					ARin when “001” ,
+					PCin when “010” ,
+					DRin when “011” ,
+					ACin when “100” ,
+					IRin when “101” ,
+					TRin when “110” ,
+					Min when “111” ,
+
+end behavioral;
