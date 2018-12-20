@@ -13,6 +13,11 @@ fall 97
 supervisor :Mohsen Farhadi
 
 
+##Schema:
+
+![alt text](https://www.draw.io/?state=%7B"ids":%5B"1Hw3w50L7eEZGJ-WvXaRs2qEKuPmMcHSs"%5D,"action":"open","userId":"108754222322900302206"%7D#G1Hw3w50L7eEZGJ-WvXaRs2qEKuPmMcHSs)
+
+
 	Faze 1:
 	
 		Control Unit:
