@@ -13,9 +13,13 @@ fall 97
 supervisor :Mohsen Farhadi
 
 
-##Schema:
+## Schema:
 
 ![alt text](https://raw.githubusercontent.com/Asozusta/Mano-Basic-Computer-Using-VHDL/master/Screenshot%20(1).png)
+
+
+
+## draft and unverified documentations written while coding:
 
 
 	Faze 1:
