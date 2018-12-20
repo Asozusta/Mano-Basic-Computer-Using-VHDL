@@ -15,17 +15,42 @@ port(
 
 	clock : in std_logic; --clk from clock generator
 
+	IO : in std_logic_vector(1 downto 0); -- IO[1]=fgi , IO[0]=fgo
+
+
+
+
+
 
 	--outputs:
 
 	
-	INR,LD,CLR	: out std_logic_vector(5 downto 0); -- registers inputs IR,AR,PC,TR,AC,DR
+	INR,LD,CLR	: out std_logic_vector(6 downto 0); -- registers inputs --- ORDER : 6>Oreg, 5>IR,  4>AR,  3>PC,  2>TR,  1>AC,  0>DR
 
 	s : out std_logic_vector(2 downto 0 ); -- bus line selector
 
 	SCINR,SCCLR : out std_logic; -- to control the sequence counter
 
 	MRead,MWrite : out std_logic; -- reading and writing from/to the memory
+
+	FGICLR,FGOCLR,FGIINR,FGOINR : out std_logic ; --input/output control
+
+	ALU : out std_logic_vector(3 downto 0);
+
+	ECLR,EINR : out std_logic;
+
+	
+	--ALU OPS:
+	--	"000"> DO NOTHING
+	--	"001"> AND
+	--	"010"> ADD
+	--	"011"> DR -> AC INPUT
+	--	"100"> CMA
+	--	"101"> CME
+	--	"110">
+	--	"111">
+	--END OF ALU OPS
+
 
 );
 
@@ -35,238 +60,568 @@ Architecture behavioral of cumain is
 
 	signal 
 	IRINR,IRLD,IRCLR,
+	OregINR,OregLD,OregCLR,
 	ARIRN,ARLD,ARCLR,
 	PCINR,PCLD,PCCLR,
 	TRINR,TRLD,TRCLR,
 	ACINR,ACLD,ACCLR,
-	DRINR,DRLD,IRCLR : out std_logic;
+	DRINR,DRLD,IRCLR : std_logic;
 
-	INR[0]<=IRINR;LD[0]<=IRLD;CLR[0]<=IRCLR;
-	INR[1]<=ARINR;LD[1]<=ARLD;CLR[1]<=ARCLR;
-	INR[2]<=PCINR;LD[2]<=PCLD;CLR[2]<=PCCLR;
-	INR[3]<=TRINR;LD[3]<=TRLD;CLR[3]<=TRCLR;
-	INR[4]<=ACINR;LD[4]<=ACLD;CLR[4]<=ACCLR;
-	INR[5]<=DRINR;LD[5]<=DRLD;CLR[5]<=DRCLR;
+	signal
+	IEN,R : std_logic;
+
+	signal
+	halt: std_logic; --halt the computer if set to 0
 	
 	Begin
 
-		time:process(T,clock`event)
+		INR[0]<=IRINR;LD[0]<=IRLD;CLR[0]<=IRCLR;
+		INR[1]<=ARINR;LD[1]<=ARLD;CLR[1]<=ARCLR;
+		INR[2]<=PCINR;LD[2]<=PCLD;CLR[2]<=PCCLR;
+		INR[3]<=TRINR;LD[3]<=TRLD;CLR[3]<=TRCLR;
+		INR[4]<=ACINR;LD[4]<=ACLD;CLR[4]<=ACCLR;
+		INR[5]<=DRINR;LD[5]<=DRLD;CLR[5]<=DRCLR;
+		INR[6]<=OregINR;LD[6]<=OregLD;CLR[6]<=OregCLR;
+
+		time:process(T,clock) is
 
 			begin
 
---           T[0] to T[3]            --
+			variable p,x: std_logic;
+			p:= D[7] and IR[15] and T[3]; 				 --- if true then an i/o op is requested
+			x:= D[7] and (not(IR[15])) and T[3];		 --- if true then a register op is requested
 
 
-			if(T[0]) then
-				if(clock`event='1') then
-					LD<="000000";
-					IR<="000000";
-					CLR<="000000";
+
+-------------------------T[0] to T[2]-------------------------
+--------------------------------------------------------------Fetch and Decode
+
+			if(T[0] and (not (R))) then
+				if(clock='1') then
+					LD<="0000000";
+					INR<="0000000";
+					CLR<="0000000";
+					FGIINR<='0';
+					FGICLR<='1';
+					FGOINR<='0';
+					FGOCLR<='1';
+					EINR<='0';
+					ECLR<='1';
+					IEN<='0';
+					R<='0';
+					--ALU<="000";
 					s<="010"
-					--SCINR<='1';
+					SCINR<='1';
 				else	
 					ARLD<='1';
 
 				end if;
 
 
-			elsif(T[1]) then
-				if(clock`event='1') then
-					LD<="000000";
-					IR<="000000";
-					CLR<="000000";
+			elsif(T[1] and (not (R))) then
+				if(clock='1') then
+					LD<="0000000";
+					INR<="0000000";
+					CLR<="0000000";
 					PCINR<='1';
-					MRead<=1;
+					MRead<='1';
 					s<="111";
-					--SCINR<='1';
+					SCINR<='1';
 				else
 					IRLD<='1';
 				end if;
 
 
-			elsif(T[2]) then
-				if(clock`event='1') then
-					LD<="000000";
-					IR<="000000";
-					CLR<="000000";
+			elsif(T[2] and (not (R))) then
+				if(clock='1') then
+					LD<="0000000";
+					INR<="0000000";
+					CLR<="0000000";
 					s<="101";
-					--SCINR<='1';
+					SCINR<='1';
 				else
 					ARLD<='1';
 				end if;
 
+------------------------------------------------------------------Interrupt
+			elsif(T[0] and T[1] and T[2] and IEN and (IO[1] or IO[0])) then
+				if(clock='1') then
+					LD<="0000000";
+					INR<="0000000";
+					CLR<="0000000";
+					R<='1';
+				else
+				end if;
 
-			elsif(T[3] and D[7] and IR[15]) then
-				if(clock`event='1') then
-					LD<="000000";
-					IR<="000000";
-					CLR<="000000";
-					--SCINR<='1';
+			elsif(T[0] and R) then
+				if(clock='1') then
+					LD<="0000000";
+					INR<="0000000";
+					CLR<="0000000";
+					ARCLR<='1';
+					s<="010";
+				else
+					TRLD<='1';
+					ARCLR<='1';
+				end if;
+
+			elsif(T[1] and R) then
+				if(clock='1') then
+					LD<="0000000";
+					INR<="0000000";
+					CLR<="0000000";
+					PCCLR<='1';
+					s<="110";
+					
+				else
+					MWrite<='1';
+				end if;
+
+			elsif(T[2] and R) then
+				if(clock='1') then
+					LD<="0000000";
+					INR<="0000000";
+					CLR<="0000000";
+					IEN<='0';
+					PCINR<='1';
+					SCCLR<='1';
+					R<='0';
+				else
+					ARLD<='1';
+				end if;
+-----------------------------T[3]----------------------------------
+-----------------------------I/O OPS-------------------------------     
+
+	--ZERO ---- NULL
+			elsif(p) then 
+				if(clock='1') then
+					LD<="0000000";
+					INR<="0000000";
+					CLR<="0000000";
+					SCCLR<='1';
 
 				else
 				
 				end if;
 
 
-			elsif(T[3] and D[7] and  (not IR[15])) then
-				if(clock`event='1') then
-					LD<="000000";
-					IR<="000000";
-					CLR<="000000";
-					--SCINR<='1';
+	--INP
+			elsif(p and IR[11]) then --requires alu
+				if(clock='1') then
+					LD<="0000000";
+					INR<="0000000";
+					CLR<="0000000";
+					SCCLR<='1';
+					FGI<='0';
+					ALU<="";
+				else
+				
+				end if;
+	--OUT
+			elsif(p and IR[10]) then 
+				if(clock='1') then
+					LD<="0000000";
+					INR<="0000000";
+					CLR<="0000000";
+					SCCLR<='1';
+					s<="100";
+				else
+					OregLD<='1';
+				end if;
+	--SKI
+			elsif(p and IR[9] and IO[1]) then 
+				if(clock='1') then
+					LD<="0000000";
+					INR<="0000000";
+					CLR<="0000000";
+					SCCLR<='1';
+					PCINR<='1';
+
+				else
+				
+				end if;
+	--SKO
+			elsif(p and IR[8] and IO[0]) then 
+				if(clock='1') then
+					LD<="0000000";
+					INR<="0000000";
+					CLR<="0000000";
+					SCCLR<='1';
+					PCINR<='1';
 
 				else
 				
 				end if;
 
-
-			elsif(T[3] and (not D[7]) and IR[15]) then
-				if(clock`event='1') then
-					LD<="000000";
-					IR<="000000";
-					CLR<="000000";
-					--SCINR<='1';
-					MRead<=1;
-					s<="111";
+	--ION
+			elsif(p and IR[7]) then 
+				if(clock='1') then
+					LD<="0000000";
+					INR<="0000000";
+					CLR<="0000000";
+					SCCLR<='1';
+					IEN<='1';
 				else
-					ARLD<='1';
+				
+				end if;
+
+	--IOF
+			elsif(p and IR[6]) then 
+				if(clock='1') then
+					LD<="0000000";
+					INR<="0000000";
+					CLR<="0000000";
+					SCCLR<='1';
+					IEN<='0';
+
+				else
+				
+				end if;
+
+------------------------------------------------------------------END OF I/O
+
+-----------------------------REGISTER OPS---------------------------------
+
+	--CLA
+
+			elsif(x and IR[11]) then 
+				if(clock='1') then
+					LD<="0000000";
+					INR<="0000000";
+					CLR<="0000000";
+					SCCLR<='1';
+					ACCLR<='1';
+				else
+				
+				end if;
+
+	--CLE
+			elsif(x and IR[10]) then 
+				if(clock='1') then
+					LD<="0000000";
+					INR<="0000000";
+					CLR<="0000000";
+					SCCLR<='1';
+					ECLR<='1';
+				else
 
 				end if;
 
+	--CMA			
+			elsif(x and IR[9]) then -- requires alu
+				if(clock='1') then
+					LD<="0000000";
+					INR<="0000000";
+					CLR<="0000000";
+					SCCLR<='1';
+					ALU<="100"
 
-			elsif(T[3] and (not D[7]) and (not IR[15])) then
-				if(clock`event='1') then
-					LD<="000000";
-					IR<="000000";
-					CLR<="000000";
-					--SCINR<='1';
+				else
+					ACLD<='1';
+				end if;
+	--CME			
+			elsif(x and IR[8]) then -- requires alu
+				if(clock='1') then
+					LD<="0000000";
+					INR<="0000000";
+					CLR<="0000000";
+					SCCLR<='1';
+					ALU<="101";
+				else
+				end if;
+	--CIR			
+			elsif(x and IR[7]) then -- requires alu
+				if(clock='1') then
+					LD<="0000000";
+					INR<="0000000";
+					CLR<="0000000";
+					SCCLR<='1';
+				else
+				end if;
+	--CIL			
+			elsif(x and IR[6]) then  -- requires alu
+				if(clock='1') then
+					LD<="0000000";
+					INR<="0000000";
+					CLR<="0000000";
+					SCCLR<='1';
+				else
+				end if;
+	--INC			
+			elsif(x and IR[5]) then 
+				if(clock='1') then
+					LD<="0000000";
+					INR<="0000000";
+					CLR<="0000000";
+					SCCLR<='1';
+					ACINR<='1';
+				else
+				end if;
+	--SPA			
+			elsif(x and IR[4] and (not(AC[15])) then 
+				if(clock='1') then
+					LD<="0000000";
+					INR<="0000000";
+					CLR<="0000000";
+					SCCLR<='1';
+					PCINR<='1';
+				else
+
+				end if;
+	--SNA			
+			elsif(x and IR[3] and AC[15]) then 
+				if(clock='1') then
+					LD<="0000000";
+					INR<="0000000";
+					CLR<="0000000";
+					SCCLR<='1';
+					PCINR<='1';
+				else
+				end if;
+	--SZA			
+			elsif(x and IR[2] and AC="0000000000000000") then 
+				if(clock='1') then
+					LD<="0000000";
+					INR<="0000000";
+					CLR<="0000000";
+					SCCLR<='1';
+					PCINR<='1';
+				else
+				end if;
+	--SZE
+			elsif(x and IR[1] and (not(E))) then 
+				if(clock='1') then
+					LD<="0000000";
+					INR<="0000000";
+					CLR<="0000000";
+					SCCLR<='1';
+					PCINR<='1';
+				else
+				end if;
+	--HLT			
+			elsif(x and IR[0]) then 
+				if(clock='1') then
+					LD<="0000000";
+					INR<="0000000";
+					CLR<="0000000";
+					halt<='0';
+				else
+				end if;
+
+
+	--NOTHING		
+			elsif(x) then 
+				if(clock='1') then
+					LD<="0000000";
+					INR<="0000000";
+					CLR<="0000000";
+					SCCLR<='1';
+
+				else
+				
+				end if;
+
+------------------------------------------------------END OF REGISTER OPS
+
+------------------------------------------------------END OF T[3]
+
+------------------------T[4] to T[6]---------------------
+
+
+-------------------------MEMORY OPS----------------------
+
+--AND:
+			elsif(T[4] and D[0] and halt)
+				if(clock='1') then
+					LD<="0000000";
+					INR<="0000000";
+					CLR<="0000000";
+					SCCLR<='1';
+					MRead<='1';
+					s<="111";
+
+				else
+					DRLD<='1';
+				end if;
+
+
+			elsif(T[5] and D[0]and halt)
+				if(clock='1') then
+					LD<="0000000";
+					INR<="0000000";
+					CLR<="0000000";
+					SCCLR<='1';
+					ALU<="001";
+				else
+					ACLD<='1';
+				end if;	
+
+
+--ADD:
+			elsif(T[4] and D[1] and halt)
+				if(clock='1') then
+					LD<="0000000";
+					INR<="0000000";
+					CLR<="0000000";
+					SCCLR<='1';
+					MRead<='1';
+					s<="111";
+
+				else
+					DRLD<='1';
+				end if;
+
+
+			elsif(T[5] and D[1] and halt)
+				if(clock='1') then
+					LD<="0000000";
+					INR<="0000000";
+					CLR<="0000000";
+					SCCLR<='1';
+					ALU<="010";
+
+				else
+					ACLD<='1';
+				end if;
+
+
+
+
+--LDA:
+			elsif(T[4] and D[2] and halt)
+				if(clock='1') then
+					LD<="0000000";
+					INR<="0000000";
+					CLR<="0000000";
+					SCCLR<='1';
+					MRead<='1';
+					s<="111";
+
+
+				else
+					DRLD<='1';
+				end if;
+
+
+			elsif(T[5] and D[2] and halt)
+				if(clock='1') then
+					LD<="0000000";
+					INR<="0000000";
+					CLR<="0000000";
+					SCCLR<='1';
+					ALU<="011"; --PASS THE DR TO AC
+					ACLD<='1';
+				else
 					NULL;
-				else
-					NULL;
 				end if;
 
 
-
---  T[4]:T[4]:T[4]:T[4]:T[4]:T[4]:T[4]:T[4]:T[4]:T[4]:--
-
-			elsif(T[4] and D[0])
-				if(clock`event='1') then
-					LD<="000000";
-					IR<="000000";
-					CLR<="000000";
-					--SCINR<='1';
-					MRead<='1';
-					s<="111";
-
-				else
-					DRLD<='1';
-				end if;
-
-
-
-			elsif(T[4] and D[1])
-				if(clock`event='1') then
-					LD<="000000";
-					IR<="000000";
-					CLR<="000000";
-					--SCINR<='1';
-					MRead<='1';
-					s<="111";
-
-				else
-					DRLD<='1';
-				end if;
-
-
-				elsif(T[4] and D[2])
-				if(clock`event='1') then
-					LD<="000000";
-					IR<="000000";
-					CLR<="000000";
-					--SCINR<='1';
-					MRead<='1';
-					s<="111";
-
-				else
-					DRLD<='1';
-				end if;
-
-
-
-				elsif(T[4] and D[3])
-				if(clock`event='1') then
-					LD<="000000";
-					IR<="000000";
-					CLR<="000000";
-					--SCCLR<='1';
+--STA:
+			elsif(T[4] and D[3] and halt)
+				if(clock='1') then
+					LD<="0000000";
+					INR<="0000000";
+					CLR<="0000000";
+					SCCLR<='1';
 					s<="100"
 					ARLD<='1';
 
 				else
 					MWrite<='1';
-					
 				end if;
 				
 
+--BUN:
+			elsif(T[4] and D[4] and halt)
+				if(clock='1') then
+					LD<="0000000";
+					INR<="0000000";
+					CLR<="0000000";
+					SCCLR<='1';
+					s<="001";
+					PCLD<='1';
+				else
+					PCLD<='1';
+				end if;
 
-				elsif(T[4] and D[4])
-				if(clock`event='1') then
-					LD<="000000";
-					IR<="000000";
-					CLR<="000000";
-					--SCCLR<='1';
+--BSA:
+
+			elsif(T[4] and D[5] and halt)
+				if(clock='1') then
+					LD<="0000000";
+					INR<="0000000";
+					CLR<="0000000";
+					SCCLR<='1';
+					s<="010";
+
 
 				else
+					MWrite<='1';
+					ARINR<='1';      -- COLLISION
 				
 				end if;
 
 
-
-				elsif(T[4] and D[5])
-				if(clock`event='1') then
-					LD<="000000";
-					IR<="000000";
-					CLR<="000000";
+			elsif(T[5] and D[5] and halt)
+				if(clock='1') then
+					LD<="0000000";
+					INR<="0000000";
+					CLR<="0000000";
+					SCCLR<='1';					
+					s<="001";
 
 				else
-				
+					PCLD<="1";
 				end if;
 
 
 
-				elsif(T[4] and D[6])
-				if(clock`event='1') then
-					LD<="000000";
-					IR<="000000";
-					CLR<="000000";
+--ISZ:
+			elsif(T[4] and D[6] and halt)
+				if(clock='1') then
+					LD<="0000000";
+					INR<="0000000";
+					CLR<="0000000";
+					SCCLR<='1';
+					MRead<='1';
+					s<="001";
 
 				else
-				
+					DRLD<='1';
+
 				end if;
 
 
-
-				elsif(T[4] and D[7])
-				if(clock`event='1') then
-					LD<="000000";
-					IR<="000000";
-					CLR<="000000";
-
+			elsif(T[5] and D[6] and halt)
+				if(clock='1') then
+					LD<="0000000";
+					INR<="0000000";
+					CLR<="0000000";
+					SCCLR<='1';										
+					DRINR<='1';
 				else
-				
+					null;
 				end if;
 
 
+			elsif(T[4] and D[6] and halt)
+				if(clock='1') then
+					LD<="0000000";
+					INR<="0000000";
+					CLR<="0000000";
+					SCCLR<='1';
+					s<="011";
+					MWrite<='1';
 
-
-
-
-			elsif(T[5])
-				if(clock`event='1') then
-					LD<="000000";
-					IR<="000000";
-					CLR<="000000";
-
+					if(DR="000000000000") then
+						PCINR<='1';
+					end if;
 				else
-				
+					null;
 				end if;
+
+
+			END IF;	
+	end process time;
+
+end behavioral;
