@@ -1,4 +1,4 @@
-```pascal
+
 Library ieee;
 Use ieee.std_logic_1164.all;
 
@@ -626,4 +626,3 @@ Architecture behavioral of cumain is
 	end process time;
 
 end behavioral;
-```
